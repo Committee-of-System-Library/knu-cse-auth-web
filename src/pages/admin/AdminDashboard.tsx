@@ -2,6 +2,7 @@
 import { css } from '@emotion/react';
 import { useState, useEffect } from 'react';
 import { Layout, Button } from '@/components/common';
+import { AdminNavigation } from '@/components/admin/AdminNavigation';
 import { useAuth } from '@/contexts/AuthContext';
 
 const containerStyles = css`
@@ -84,7 +85,7 @@ const statItemStyles = css`
 const statNumberStyles = css`
   font-size: 32px;
   font-weight: 700;
-  color: #1e3a8a;
+  color: #059669;
   margin-bottom: 4px;
 `;
 
@@ -135,6 +136,17 @@ export const AdminDashboard: React.FC = () => {
   }
 
   const adminCards: AdminCard[] = [
+    {
+      title: 'QR 인증',
+      description: '실시간 학생 신분 확인 및 QR 코드 스캔',
+      actions: [
+        {
+          label: 'QR 인증 시작',
+          variant: 'success',
+          onClick: () => window.location.href = '/qr-auth',
+        },
+      ],
+    },
     {
       title: '학생 관리',
       description: '학생 정보 조회, 추가, 수정, 삭제',
@@ -199,8 +211,10 @@ export const AdminDashboard: React.FC = () => {
   return (
     <Layout>
       <div css={containerStyles}>
+        <AdminNavigation />
+
         <div css={headerStyles}>
-          <h1 css={titleStyles}>관리자 대시보드</h1>
+          <h1 css={titleStyles}>📊 관리자 대시보드</h1>
         </div>
 
         <div css={statsStyles}>

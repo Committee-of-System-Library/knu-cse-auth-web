@@ -2,9 +2,15 @@
 import { css } from '@emotion/react';
 import { useState, useRef } from 'react';
 import { Layout, Button, Input } from '@/components/common';
+import { AdminNavigation } from '@/components/admin/AdminNavigation';
 import { qrApi } from '@/utils/api';
 
 const containerStyles = css`
+  max-width: 1200px;
+  margin: 0 auto;
+`;
+
+const contentStyles = css`
   max-width: 600px;
   margin: 0 auto;
 `;
@@ -238,7 +244,10 @@ export const QRAuthPage: React.FC = () => {
   return (
     <Layout>
       <div css={containerStyles}>
-        <h1 css={titleStyles}>📱 QR 인증</h1>
+        <AdminNavigation />
+
+        <div css={contentStyles}>
+          <h1 css={titleStyles}>📱 QR 인증</h1>
 
         <div css={cardStyles}>
           <h3 style={{ marginTop: 0, marginBottom: '20px' }}>학생 신분 확인</h3>
@@ -347,6 +356,7 @@ export const QRAuthPage: React.FC = () => {
               자동으로 초기화됩니다...
             </div>
           )}
+          </div>
         </div>
       </div>
     </Layout>

@@ -1,10 +1,8 @@
 import { Route, Routes, Navigate, useSearchParams } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { LoadingSpinner } from '@/components/common';
-
-// Import pages
-import { LoginPage } from '@/pages/LoginPage';
-import { AdditionalInfoPage } from '@/pages/AdditionalInfoPage';
+import { LoginPage } from '@/pages/auth/LoginPage';
+import { AdditionalInfoPage } from '@/pages/auth/AdditionalInfoPage';
 import { QRAuthPage } from '@/pages/QRAuthPage';
 import { AdminDashboard } from '@/pages/admin/AdminDashboard';
 import { AdminCallback } from '@/pages/admin/AdminCallback';
@@ -45,14 +43,14 @@ export const Router = () => {
       <Route path="/additional-info" element={<AdditionalInfoPage />} />
       <Route path="/callback" element={<CallbackHandler />} />
       
-      {/* Protected user routes */}
-      <Route 
-        path="/qr-auth" 
+      {/* Admin QR Auth route */}
+      <Route
+        path="/qr-auth"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute adminOnly>
             <QRAuthPage />
           </ProtectedRoute>
-        } 
+        }
       />
       
       {/* Admin routes */}
