@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { User } from '@/types/auth';
 import { authApi } from '@/utils/api';
 import { ROLES } from '@/config/constants';
@@ -23,12 +23,9 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // ❗ `useState`를 `useRef`로 변경하여 StrictMode의 중복 실행 방지
   const isInitialized = useRef(false);
-  
   const navigate = useNavigate();
-  const location = useLocation();
+  
 
   const isAuthenticated = !!user;
   const isAdmin = user?.role === ROLES.ADMIN;
@@ -63,42 +60,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isInitialized.current = true;
 
     const initializeAuth = async () => {
-      const params = new URLSearchParams(location.search);
-      const code = params.get('code');
-
-      if (code) {
-        const currentredirectUrl = window.location.origin + location.pathname;
-        
-        // URL에서 code 파라미터 정리
-        window.history.replaceState({}, document.title, location.pathname);
-        
-        try {
-          // 동적으로 생성한 URI를 토큰 교환 시 사용
-          const tokenResponse = await authApi.exchangeToken(code, currentredirectUrl);
-          if (tokenResponse.status >= 200 && tokenResponse.status < 300 && tokenResponse.data.data) {
-            const { accessToken } = tokenResponse.data.data;
-            localStorage.setItem('accessToken', accessToken);
-
-            const userResponse = await authApi.getUserInfo();
-            if (userResponse.status >= 200 && userResponse.status < 300 && userResponse.data.data) {
-              setUser(userResponse.data.data);
-            } else {
-              throw new Error('Failed to fetch user info after token exchange.');
-            }
-          } else {
-            throw new Error('Failed to exchange token.');
-          }
-        } catch (error) {
-          console.error('OAuth callback processing failed:', error);
-          localStorage.removeItem('accessToken');
-          setUser(null);
-          navigate('/login');
-        } finally {
-          setIsLoading(false);
-        }
-        return;
-      }
-
       const existingToken = localStorage.getItem('accessToken');
       if (existingToken) {
         try {
@@ -123,8 +84,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     initializeAuth();
-    
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const contextValue: AuthContextType = {

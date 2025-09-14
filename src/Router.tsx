@@ -1,4 +1,4 @@
-import { Route, Routes, Navigate, useSearchParams } from 'react-router-dom';
+import { Route, Routes, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { LoadingSpinner } from '@/components/common';
 import { LoginPage } from '@/pages/auth/LoginPage';
@@ -22,21 +22,6 @@ const HomePage = () => {
   return <Navigate to="/login" replace />;
 };
 
-const AdminRouteHandler = () => {
-    const [searchParams] = useSearchParams();
-    const code = searchParams.get('code');
-
-    if (code) {
-        return <AdminCallback />;
-    }
-
-    return (
-        <ProtectedRoute adminOnly>
-            <AdminDashboard />
-        </ProtectedRoute>
-    );
-};
-
 export const Router = () => {
   return (
     <Routes>
@@ -47,6 +32,7 @@ export const Router = () => {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/additional-info" element={<AdditionalInfoPage />} />
       <Route path="/callback" element={<CallbackHandler />} />
+      <Route path="/admin/callback" element={<AdminCallback />} />
       
       {/* Admin QR Auth route */}
       <Route
@@ -61,8 +47,13 @@ export const Router = () => {
       {/* Admin routes */}
       <Route
         path="/admin"
-        element={<AdminRouteHandler />}
+        element={
+          <ProtectedRoute adminOnly>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
       />
+
       <Route
         path="/admin/students"
         element={

@@ -20,30 +20,41 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 로딩 중일 때만 로딩 스피너 표시
   if (isLoading) {
     return <LoadingSpinner />;
   }
 
-  // If authentication is required but user is not authenticated
   if (requireAuth && !isAuthenticated) {
     const currentUrl = window.location.href;
+    
     // 이미 login 페이지이거나 redirectUrl이 포함된 경우 중복 리다이렉트 방지
     if (location.pathname === '/login' || currentUrl.includes('redirectUrl=')) {
       return null;
     }
-    const encodedUrl = encodeURIComponent(currentUrl);
-    navigate(`/login?redirectUrl=${encodedUrl}`, { replace: true });
+
+    let finalRedirectUri = '';
+    const origin = window.location.origin;
+    const pathname = location.pathname;
+
+    if (pathname.includes('/admin') || pathname.includes('/qr-auth')) {
+      finalRedirectUri = `${origin}/admin/callback`;
+    } else {
+      finalRedirectUri = currentUrl;
+    }
+
+    const encodedRedirectUri = encodeURIComponent(finalRedirectUri);
+    navigate(`/login?redirectUrl=${encodedRedirectUri}`, { replace: true });
+
     return null;
   }
 
-  // If admin access is required but user is not admin
+  // 관리자 접근이 필요하지만 권한이 없는 경우
   if (adminOnly && !isFinanceOrAbove) {
     navigate('/dashboard', { replace: true });
     return null;
   }
 
-  // If specific role is required
+  // 특정 역할(role)이 필요하지만 충족하지 못하는 경우
   if (requiredRole && user && !hasRequiredRole(user.role, requiredRole)) {
     navigate('/dashboard', { replace: true });
     return null;
