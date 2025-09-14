@@ -1,12 +1,12 @@
 services:
-    k-lock-frontend:
+    knu-cse-auth-web:
         build:
             context: .
             dockerfile: Dockerfile
-        container_name: k-lock-frontend
+        container_name: knu-cse-auth-web
         environment:
             NODE_ENV: production
             PORT: 
         ports:
-            - "51000:51000"
+            - "40000:40000"
         restart: always
