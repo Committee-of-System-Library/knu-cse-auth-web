@@ -1,60 +1,59 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react';
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Table, type Column } from '@/components/common';
 import { AdminPageLayout, SearchSection, ModernButton, ModernInput, ModernSelect } from '@/components/admin/AdminPageLayout';
-import { studentApi } from '@/utils/api';
-import { Student, PageableResponse } from '@/types/auth';
-import { MAJORS } from '@/config/constants';
+import { qrApi } from '@/utils/api';
+import { QrAuthLog, PageableResponse } from '@/types/auth';
 
 const toolbarStyles = css`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 24px 0;
-  padding: 16px 20px;
-  background: #f8fafc;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  margin-bottom: 20px;
 `;
 
 const selectedCountStyles = css`
   color: #64748b;
   font-size: 14px;
-  font-weight: 500;
 `;
 
-const paginationStyles = css`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 1px solid #f1f5f9;
+const statusBadgeStyles = css`
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+
+  &.paid {
+    background-color: #dcfce7;
+    color: #166534;
+  }
+
+  &.unpaid {
+    background-color: #fef2f2;
+    color: #dc2626;
+  }
 `;
 
-export const StudentManagement: React.FC = () => {
-  const navigate = useNavigate();
-  const [students, setStudents] = useState<Student[]>([]);
+export const QrLogManagement: React.FC = () => {
+  const [logs, setLogs] = useState<QrAuthLog[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedStudents, setSelectedStudents] = useState<Student[]>([]);
+  const [selectedLogs, setSelectedLogs] = useState<QrAuthLog[]>([]);
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [searchColumn, setSearchColumn] = useState('name');
+  const [searchColumn, setSearchColumn] = useState('studentName');
   const [pagination, setPagination] = useState({
     page: 0,
     size: 20,
     totalElements: 0,
     totalPages: 0,
   });
-  const [sortKey, setSortKey] = useState('studentNumber');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortKey, setSortKey] = useState('scanDate');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
-  const loadStudents = async () => {
+  const loadQrLogs = async () => {
     setLoading(true);
     try {
-      const response = await studentApi.getStudents({
+      const response = await qrApi.getQRLogs({
         page: pagination.page,
         size: pagination.size,
         sortBy: sortKey,
@@ -64,8 +63,8 @@ export const StudentManagement: React.FC = () => {
       });
 
       if (response.status >= 200 && response.status < 300 && response.data.data) {
-        const data = response.data.data as PageableResponse<Student>;
-        setStudents(data.content);
+        const data = response.data.data as PageableResponse<QrAuthLog>;
+        setLogs(data.content);
         setPagination(prev => ({
           ...prev,
           totalElements: data.totalElements,
@@ -73,19 +72,19 @@ export const StudentManagement: React.FC = () => {
         }));
       }
     } catch (error) {
-      console.error('Failed to load students:', error);
+      console.error('Failed to load QR logs:', error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadStudents();
+    loadQrLogs();
   }, [pagination.page, pagination.size, sortKey, sortDirection]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearch = () => {
     setPagination(prev => ({ ...prev, page: 0 }));
-    loadStudents();
+    loadQrLogs();
   };
 
   const handleSort = (key: string, direction: 'asc' | 'desc') => {
@@ -93,34 +92,34 @@ export const StudentManagement: React.FC = () => {
     setSortDirection(direction);
   };
 
-  const handleRowSelect = (student: Student) => {
-    setSelectedStudents(prev => {
-      const isSelected = prev.some(s => s.studentId === student.studentId);
+  const handleRowSelect = (log: QrAuthLog) => {
+    setSelectedLogs(prev => {
+      const isSelected = prev.some(l => l.id === log.id);
       if (isSelected) {
-        return prev.filter(s => s.studentId !== student.studentId);
+        return prev.filter(l => l.id !== log.id);
       } else {
-        return [...prev, student];
+        return [...prev, log];
       }
     });
   };
 
   const handleSelectAll = () => {
-    if (selectedStudents.length === students.length) {
-      setSelectedStudents([]);
+    if (selectedLogs.length === logs.length) {
+      setSelectedLogs([]);
     } else {
-      setSelectedStudents([...students]);
+      setSelectedLogs([...logs]);
     }
   };
 
   const handleDelete = async () => {
-    if (selectedStudents.length === 0) return;
-    
-    if (confirm(`선택된 ${selectedStudents.length}명의 학생을 삭제하시겠습니까?`)) {
+    if (selectedLogs.length === 0) return;
+
+    if (confirm(`선택된 ${selectedLogs.length}개의 QR 로그를 삭제하시겠습니까?`)) {
       try {
-        const ids = selectedStudents.map(s => s.studentId);
-        await studentApi.deleteStudents(ids);
-        setSelectedStudents([]);
-        loadStudents();
+        // Delete logs one by one (backend doesn't support batch delete)
+        await Promise.all(selectedLogs.map(log => qrApi.deleteQRLog(log.id)));
+        setSelectedLogs([]);
+        loadQrLogs();
         alert('삭제되었습니다.');
       } catch (error) {
         console.error('Delete failed:', error);
@@ -129,7 +128,17 @@ export const StudentManagement: React.FC = () => {
     }
   };
 
-  const columns: Column<Student>[] = [
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const columns: Column<QrAuthLog>[] = [
     {
       key: 'studentNumber',
       title: '학번',
@@ -137,70 +146,70 @@ export const StudentManagement: React.FC = () => {
       width: '120px',
     },
     {
-      key: 'name',
+      key: 'studentName',
       title: '이름',
       sortable: true,
       width: '100px',
     },
     {
-      key: 'major',
-      title: '전공',
+      key: 'duesPaid',
+      title: '회비 납부',
       render: (value: unknown) => {
-        const major = value as string;
-        return MAJORS[major as keyof typeof MAJORS] || major;
-      },
-      width: '150px',
-    },
-    {
-      key: 'role',
-      title: '역할',
-      render: (value: unknown) => {
-        const role = value as string;
-        const roleNames = {
-          'ROLE_ADMIN': '관리자',
-          'ROLE_EXECUTIVE': '집행부',
-          'ROLE_FINANCE': '재정부',
-          'ROLE_STUDENT': '학생'
-        };
-        return roleNames[role as keyof typeof roleNames] || role;
+        const paid = value as boolean;
+        return (
+          <span css={statusBadgeStyles} className={paid ? 'paid' : 'unpaid'}>
+            {paid ? '납부' : '미납'}
+          </span>
+        );
       },
       width: '100px',
     },
     {
+      key: 'scanDate',
+      title: '스캔 날짜',
+      render: (value: unknown) => formatDate(value as string),
+      sortable: true,
+      width: '160px',
+    },
+    {
       key: 'actions',
       title: '작업',
-      render: (_: unknown, record: Student) => (
+      render: (_: unknown, record: QrAuthLog) => (
         <ModernButton
-          variant="secondary"
-          onClick={() => navigate(`/admin/students/${record.studentId}/edit`)}
+          variant="danger"
+          onClick={async () => {
+            if (confirm('이 QR 로그를 삭제하시겠습니까?')) {
+              try {
+                await qrApi.deleteQRLog(record.id);
+                loadQrLogs();
+                alert('삭제되었습니다.');
+              } catch (error) {
+                console.error('Delete failed:', error);
+                alert('삭제 중 오류가 발생했습니다.');
+              }
+            }
+          }}
         >
-          <span>✏️</span>
-          수정
+          <span>🗑️</span>
+          삭제
         </ModernButton>
       ),
-      width: '120px',
+      width: '80px',
     },
   ];
 
   return (
     <AdminPageLayout
-      title="학생 관리"
-      icon="👥"
-      actions={
-        <ModernButton onClick={() => navigate('/admin/students/create')}>
-          <span>➕</span>
-          새 학생 추가
-        </ModernButton>
-      }
+      title="QR 인증 로그"
+      icon="📋"
     >
       <SearchSection>
         <ModernSelect
           value={searchColumn}
           onChange={(e) => setSearchColumn(e.target.value)}
         >
-          <option value="name">이름</option>
+          <option value="studentName">이름</option>
           <option value="studentNumber">학번</option>
-          <option value="email">이메일</option>
         </ModernSelect>
         <ModernInput
           type="text"
@@ -215,10 +224,10 @@ export const StudentManagement: React.FC = () => {
         </ModernButton>
       </SearchSection>
 
-      {selectedStudents.length > 0 && (
+      {selectedLogs.length > 0 && (
         <div css={toolbarStyles}>
           <div css={selectedCountStyles}>
-            <span>✅</span> {selectedStudents.length}개 항목 선택됨
+            <span>✅</span> {selectedLogs.length}개 항목 선택됨
           </div>
           <div>
             <ModernButton variant="danger" onClick={handleDelete}>
@@ -229,12 +238,12 @@ export const StudentManagement: React.FC = () => {
         </div>
       )}
 
-      <Table<Student>
+      <Table<QrAuthLog>
         columns={columns}
-        data={students}
+        data={logs}
         loading={loading}
         selectable
-        selectedRows={selectedStudents}
+        selectedRows={selectedLogs}
         onRowSelect={handleRowSelect}
         onSelectAll={handleSelectAll}
         onSort={handleSort}
@@ -242,7 +251,15 @@ export const StudentManagement: React.FC = () => {
         sortDirection={sortDirection}
       />
 
-      <div css={paginationStyles}>
+      <div css={css`
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid #f1f5f9;
+      `}>
         <ModernButton
           variant="secondary"
           disabled={pagination.page === 0}

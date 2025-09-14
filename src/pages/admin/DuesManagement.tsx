@@ -87,7 +87,7 @@ export const DuesManagement: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [selectedDues, setSelectedDues] = useState<Dues[]>([]);
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [searchColumn, setSearchColumn] = useState('name');
+  const [searchColumn, setSearchColumn] = useState('studentName');
   const [stats, setStats] = useState({ total: 0, paid: 0, unpaid: 0 });
   const [pagination, setPagination] = useState({
     page: 0,
@@ -121,10 +121,10 @@ export const DuesManagement: React.FC = () => {
           totalPages: data.totalPages,
         }));
 
-        // Calculate stats
+        // Calculate stats - 모든 dues 레코드는 납부된 것으로 간주
         const total = data.totalElements;
-        const paid = data.content.filter(d => d.paid).length;
-        setStats({ total, paid, unpaid: total - paid });
+        const paid = data.content.length;
+        setStats({ total, paid, unpaid: 0 });
       }
     } catch (error) {
       console.error('Failed to load dues:', error);
@@ -171,9 +171,9 @@ export const DuesManagement: React.FC = () => {
 
   const handleRowSelect = (due: Dues) => {
     setSelectedDues(prev => {
-      const isSelected = prev.some(d => d.studentId === due.studentId);
+      const isSelected = prev.some(d => d.duesId === due.duesId);
       if (isSelected) {
-        return prev.filter(d => d.studentId !== due.studentId);
+        return prev.filter(d => d.duesId !== due.duesId);
       } else {
         return [...prev, due];
       }
@@ -196,35 +196,49 @@ export const DuesManagement: React.FC = () => {
       width: '120px',
     },
     {
-      key: 'name',
+      key: 'studentName',
       title: '이름',
       sortable: true,
       width: '100px',
     },
     {
+      key: 'depositorName',
+      title: '입금자명',
+      sortable: true,
+      width: '100px',
+    },
+    {
+      key: 'amount',
+      title: '금액',
+      render: (value: unknown) => `${(value as number).toLocaleString()}원`,
+      width: '100px',
+    },
+    {
+      key: 'remainingSemesters',
+      title: '남은 학기',
+      width: '80px',
+    },
+    {
       key: 'paid',
       title: '납부 상태',
-      render: (value: unknown) => {
-        const paid = value as boolean;
-        return (
+      render: () => (
         <span css={css`
           padding: 4px 8px;
           border-radius: 4px;
           font-size: 12px;
           font-weight: 500;
-          background: ${paid ? '#dcfce7' : '#fef2f2'};
-          color: ${paid ? '#059669' : '#dc2626'};
+          background: #dcfce7;
+          color: #059669;
         `}>
-          {paid ? '납부' : '미납부'}
+          납부
         </span>
-        );
-      },
+      ),
       width: '100px',
     },
     {
-      key: 'paidDate',
+      key: 'submittedAt',
       title: '납부일',
-      render: (value: unknown) => (value as string) || '-',
+      render: (value: unknown) => new Date(value as string).toLocaleDateString('ko-KR'),
       width: '120px',
     },
     {
@@ -234,7 +248,7 @@ export const DuesManagement: React.FC = () => {
         <Button
           size="small"
           variant="secondary"
-          onClick={() => window.location.href = `/admin/dues/${record.studentId}/edit`}
+          onClick={() => window.location.href = `/admin/dues/${record.duesId}/edit`}
         >
           수정
         </Button>
@@ -295,13 +309,14 @@ export const DuesManagement: React.FC = () => {
       </div>
 
       <div css={searchBarStyles}>
-        <select 
-          value={searchColumn} 
+        <select
+          value={searchColumn}
           onChange={(e) => setSearchColumn(e.target.value)}
           css={selectStyles}
         >
-          <option value="name">이름</option>
+          <option value="studentName">이름</option>
           <option value="studentNumber">학번</option>
+          <option value="depositorName">입금자명</option>
         </select>
         <Input
           type="text"

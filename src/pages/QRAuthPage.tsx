@@ -140,7 +140,7 @@ interface StudentInfo {
 export const QRAuthPage: React.FC = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [manualStudentNumber, setManualStudentNumber] = useState('');
-  const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
+  const [studentInfo, setStudentInfo] = useState<(StudentInfo & { duesPaid: boolean }) | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [authSuccess, setAuthSuccess] = useState(false);
@@ -185,7 +185,16 @@ export const QRAuthPage: React.FC = () => {
     try {
       const response = await qrApi.getStudentByQR(studentNumber);
       if (response.status >= 200 && response.status < 300) {
-        setStudentInfo(response.data.data || null);
+        const data = response.data.data;
+        if (data) {
+          setStudentInfo({
+            name: data.studentName,
+            studentNumber: data.studentNumber,
+            duesPaid: data.duesPaid,
+          });
+        } else {
+          setStudentInfo(null);
+        }
       }
     } catch (err: unknown) {
       if (err instanceof Error && (err as { response?: { status: number } }).response?.status === 404) {
@@ -209,11 +218,12 @@ export const QRAuthPage: React.FC = () => {
     setError('');
 
     try {
-      await qrApi.saveQRLog({
-        studentNumber: studentInfo.studentNumber,
-        studentName: studentInfo.name,
-        duesPaid: studentInfo.duesPaid,
-        scanDate: new Date().toISOString().split('T')[0],
+      await qrApi.saveQRLogs({
+        scannedStudents: [{
+          studentNumber: studentInfo.studentNumber,
+          studentName: studentInfo.name,
+          duesPaid: studentInfo.duesPaid,
+        }]
       });
       
       setAuthSuccess(true);

@@ -1,15 +1,16 @@
 import axios, { AxiosResponse } from 'axios';
 import { API_BASE_URL } from '@/config/constants';
-import type { 
-  ApiResponse, 
-  TokenResponse, 
-  User, 
-  StudentInfo, 
+import type {
+  ApiResponse,
+  TokenResponse,
+  User,
+  StudentInfo,
   PageableResponse,
   Student,
   Dues,
   QrAuthLog,
-  Provider 
+  Provider,
+  AdminStatistics
 } from '@/types/auth';
 
 // Create axios instance
@@ -138,21 +139,22 @@ export const duesApi = {
 // QR Authentication API
 export const qrApi = {
   // Get student info by QR scan
-  getStudentByQR: (studentNumber: string): Promise<AxiosResponse<ApiResponse<{
-    studentNumber: string;
-    name: string;
-    duesPaid: boolean;
-  }>>> =>
-    api.get(`/qr/student?studentNumber=${studentNumber}`),
-
-  // Save QR auth log
-  saveQRLog: (data: {
+  getStudentByQR: (studentNumber: string, duesOnly: boolean = false): Promise<AxiosResponse<ApiResponse<{
     studentNumber: string;
     studentName: string;
     duesPaid: boolean;
-    scanDate: string;
+  }>>> =>
+    api.get(`/qr-auth/student?studentNumber=${studentNumber}&duesOnly=${duesOnly}`),
+
+  // Save QR auth logs
+  saveQRLogs: (data: {
+    scannedStudents: Array<{
+      studentNumber: string;
+      studentName: string;
+      duesPaid: boolean;
+    }>;
   }): Promise<AxiosResponse<ApiResponse<void>>> =>
-    api.post('/qr-auth', data),
+    api.post('/qr-auth/logs', data),
 
   // Get QR auth logs (admin)
   getQRLogs: (params?: {
@@ -163,11 +165,11 @@ export const qrApi = {
     searchColumn?: string;
     searchKeyword?: string;
   }): Promise<AxiosResponse<ApiResponse<PageableResponse<QrAuthLog>>>> =>
-    api.get('/qr-auth-logs', { params }),
+    api.get('/qr-auth/logs', { params }),
 
   // Delete QR log
   deleteQRLog: (id: number): Promise<AxiosResponse<ApiResponse<void>>> =>
-    api.delete(`/qr-auth-logs/${id}`),
+    api.delete(`/qr-auth/logs/${id}`),
 };
 
 // Provider API
@@ -194,6 +196,13 @@ export const providerApi = {
   // Delete providers
   deleteProviders: (ids: number[]): Promise<AxiosResponse<ApiResponse<void>>> =>
     api.delete(`/providers?ids=${ids.join(',')}`),
+};
+
+// Admin API
+export const adminApi = {
+  // Get admin statistics
+  getStatistics: (): Promise<AxiosResponse<ApiResponse<AdminStatistics>>> =>
+    api.get('/admin/statistics'),
 };
 
 export default api;

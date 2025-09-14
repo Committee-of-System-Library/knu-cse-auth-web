@@ -45,11 +45,13 @@ export interface Student {
 }
 
 export interface Dues {
-  studentId: number;
+  duesId: number;
+  studentName: string;
   studentNumber: string;
-  name: string;
-  paid: boolean;
-  paidDate?: string;
+  depositorName: string;
+  amount: number;
+  remainingSemesters: number;
+  submittedAt: string;
 }
 
 export interface QrAuthLog {
@@ -62,7 +64,15 @@ export interface QrAuthLog {
 
 export interface Provider {
   id: number;
-  name: string;
-  clientId: string;
-  // Add other provider fields as needed
+  email: string;
+  providerName: string;
+  providerKey: string;
+  studentId: number;
+}
+
+export interface AdminStatistics {
+  totalStudents: number;
+  paidDues: number;
+  qrScans: number;
+  providers: number;
 }
